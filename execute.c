@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "jam.h"
 #include "sig.h"
 #include "frame.h"
@@ -41,6 +42,34 @@ void *executeMethodArgs(Object *ob, Class *class, MethodBlock *mb, ...) {
 
     return ret;
 }
+
+//void create_top_frame_tmp(ExecEnv *ee, Class *class, MethodBlock *mb, u4 *sp, void *ret) {
+//    Frame *last = ee->last_frame;
+//    Frame *dummy = (Frame *)(last->ostack+last->mb->max_stack);
+//    Frame *new_frame;
+//
+//    uintptr_t *new_ostack;
+//
+//    ret = (void*) (sp = (uintptr_t*)(dummy+1));
+//    new_frame = (Frame *)(sp + mb->max_locals);
+//    new_ostack = ALIGN_OSTACK(new_frame + 1);
+//
+//    if((char*)(new_ostack + mb->max_stack) > ee->stack_end) {
+//        printf("Fatal stack overflow!  Aborting VM.\n");
+//
+//    }
+//
+//    dummy->mb = NULL;
+//    dummy->ostack = sp;
+//    dummy->prev = last;
+//
+//    new_frame->mb = mb;
+//    new_frame->lvars = sp;
+//    new_frame->ostack = new_ostack;
+//
+//    new_frame->prev = dummy;
+//    ee->last_frame = new_frame;
+//}
 
 void *executeMethodVaList(Object *ob, Class *class, MethodBlock *mb, va_list jargs) {
     ClassBlock *cb = CLASS_CB(class);

@@ -106,7 +106,7 @@ retry:
                 return NULL;
 
             CP_TYPE(cp, cp_index) = CONSTANT_Locked;
-            CP_INFO(cp, cp_index) = (u4)resolved_class;
+            CP_INFO(cp, cp_index) = (u8)resolved_class;
             CP_TYPE(cp, cp_index) = CONSTANT_Resolved;
 
 	    break;
@@ -152,7 +152,7 @@ retry:
 
             if(mb) {
                 CP_TYPE(cp, cp_index) = CONSTANT_Locked;
-                CP_INFO(cp, cp_index) = (u4)mb;
+                CP_INFO(cp, cp_index) = (u8)mb;
                 CP_TYPE(cp, cp_index) = CONSTANT_Resolved;
             } else
                 signalException("java/lang/NoSuchMethodError", methodname);
@@ -197,7 +197,7 @@ retry:
 
             if(mb) {
                 CP_TYPE(cp, cp_index) = CONSTANT_Locked;
-                CP_INFO(cp, cp_index) = (u4)mb;
+                CP_INFO(cp, cp_index) = (u8)mb;
                 CP_TYPE(cp, cp_index) = CONSTANT_Resolved;
             } else
                 signalException("java/lang/NoSuchMethodError", methodname);
@@ -242,7 +242,7 @@ retry:
 
             if(fb) {
                 CP_TYPE(cp, cp_index) = CONSTANT_Locked;
-                CP_INFO(cp, cp_index) = (u4)fb;
+                CP_INFO(cp, cp_index) = (u8)fb;
                 CP_TYPE(cp, cp_index) = CONSTANT_Resolved;
             } else
                 signalException("java/lang/NoSuchFieldError", fieldname);
@@ -254,6 +254,7 @@ retry:
     return fb;
 }
 
+// resolve constant in pool
 u4 resolveSingleConstant(Class *class, int cp_index) {
     ConstantPool *cp = &(CLASS_CB(class)->constant_pool);
 
@@ -268,9 +269,10 @@ retry:
             if(CP_TYPE(cp, cp_index) != CONSTANT_String)
                 goto retry;
 
+            // resolve string in class's constant pool
             string = createString(CP_UTF8(cp, idx));
             CP_TYPE(cp, cp_index) = CONSTANT_Locked;
-            CP_INFO(cp, cp_index) = (u4)findInternedString(string);
+            CP_INFO(cp, cp_index) = (u8)findInternedString(string);
             CP_TYPE(cp, cp_index) = CONSTANT_Resolved;
             break;
         }

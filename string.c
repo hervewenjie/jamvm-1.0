@@ -76,6 +76,7 @@ int stringComp(Object *ptr, Object *ptr2) {
     return FALSE;
 }
 
+// create string object
 Object *createString(unsigned char *utf8) {
     int len = utf8Len(utf8);
     Object *array;
@@ -83,7 +84,7 @@ Object *createString(unsigned char *utf8) {
     Object *ob;
 
     if(!inited)
-        initialiseString();
+        initialiseString();                 // init java.lang.String
 
     if((array = allocTypeArray(T_CHAR, len)) == NULL ||
        (ob = allocObject(string)) == NULL)

@@ -35,9 +35,9 @@ static int verboseclass = FALSE;
 #define MIN_HEAP 4*KB
 #define MIN_STACK 2*KB
 
-static int java_stack = 64*KB;
-static int min_heap   = 256*KB;
-static int max_heap   = 16*MB;
+static int java_stack = 127*KB;
+static int min_heap   = 512*MB;
+static int max_heap   = 1024*MB;
 
 char VM_initing = TRUE;
 
@@ -46,10 +46,10 @@ void initVM() {
    MethodBlock *mb;
 
    initialiseAlloc(min_heap, max_heap, verbosegc); // init mem
-   initialiseClass(verboseclass);                  // init loaded class hash table
-   initialiseDll();                                // init dll hash table
-   initialiseUtf8();                               // init utf8 hash table
-   initialiseMonitor();                            // init monitor hash table
+   initialiseClass(verboseclass);                  // hash table init loaded class
+   initialiseDll();                                // hash table init dll
+   initialiseUtf8();                               // hash table init utf8
+   initialiseMonitor();                            // hash table init monitor
    initialiseMainThread(java_stack);               // little fucking complicated
    initialiseString();                             // init java.lang.String
    initialiseGC(noasyncgc);                        // init GC threads

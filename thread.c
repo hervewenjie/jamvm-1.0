@@ -203,6 +203,7 @@ void initialiseJavaStack(ExecEnv *ee) {
    ee->stack = stack;
    ee->last_frame = top;
    ee->stack_end = stack + java_stack_size-1024;
+
 }
 
 void *threadStart(void *arg) {
@@ -613,15 +614,16 @@ void initialiseMainThread(int stack_size) {
     pthread_attr_init(&attributes);
     pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
 
+    // Thread main The main thread info - head of the thread list
     main.stack_base = &thrdGrp_class;
 
     main.tid = pthread_self();
     main.id = genThreadID();
     main.state = RUNNING;
-    main.ee = &main_ee;
+    main.ee = &main_ee;              // main thread execute env
 
     initialiseJavaStack(&main_ee);
-    setThreadSelf(&main);
+    setThreadSelf(&main);            // set Thread main to system thread local
 
     /* As we're initialising, VM will abort if Thread can't be found */
     thread_class = findSystemClass0("java/lang/Thread");
@@ -671,7 +673,6 @@ void initialiseMainThread(int stack_size) {
     INST_DATA(main_ee.thread)[name_offset] = (u4)Cstr2String("main");
     INST_DATA(main_ee.thread)[group_offset] = root->static_value;
     INST_DATA(main_ee.thread)[priority_offset] = 5;
-
     INST_DATA(main_ee.thread)[vmData_offset] = (u4)&main;
 
     initialiseSignals();

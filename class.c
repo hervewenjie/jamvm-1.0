@@ -117,6 +117,7 @@ Class *defineClass(char *data, int offset, int len, Object *class_loader) {
     READ_U2(minor_version, ptr, len);  // minor version
     READ_U2(major_version, ptr, len);  // major version
 
+    // gc malloc here
     class = allocClass();
     if(class == NULL)
         return NULL;

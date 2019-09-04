@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 #include "jam.h"
@@ -261,12 +262,13 @@ u4 *executeJava() {
     u4 *lvars = frame->lvars;                // local vars
     u4 *ostack = frame->ostack;              // stack
     volatile unsigned char *pc = mb->code;   // code -> pc
+    ClassBlock* class_tmp = CLASS_CB(mb->class);
     ConstantPool *cp = &(CLASS_CB(mb->class)->constant_pool);
 
-    Object *this = (Object*)lvars[0];
-    Class *new_class;
-    MethodBlock *new_mb;
-    u4 *arg1;
+    Object *this = (Object*)lvars[0];        // method local index 0 is pointer to this object
+    Class *new_class;                        //
+    MethodBlock *new_mb;                     //
+    u4 *arg1;                                //
 
 #ifdef THREADED
     static void *handlers[] = {
@@ -398,9 +400,8 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_LDC)          // LDC
-        // resolve from class struct
         *ostack++ = resolveSingleConstant(mb->class, CP_SINDEX(pc));
-        OPCODE_REWRITE(pc, OPC_LDC_QUICK);
+        OPCODE_REWRITE(pc, OPC_LDC_QUICK); // write for next time?
         pc += 2;
         DISPATCH(pc)
 
@@ -730,11 +731,11 @@ unused:
         BINARY_OP(double, *, ostack, pc);
 
     DEF_OPC(OPC_IDIV)
-	ZERO_DIVISOR_CHECK(int, ostack);
+	    ZERO_DIVISOR_CHECK(int, ostack);
         BINARY_OP(int, /, ostack, pc);
 
     DEF_OPC(OPC_LDIV)
-	ZERO_DIVISOR_CHECK(long long, ostack);
+	    ZERO_DIVISOR_CHECK(long long, ostack);
         BINARY_OP(long long, /, ostack, pc);
 
     DEF_OPC(OPC_FDIV)
@@ -744,11 +745,11 @@ unused:
         BINARY_OP(double, /, ostack, pc);
 
     DEF_OPC(OPC_IREM)
-	ZERO_DIVISOR_CHECK(int, ostack);
+	    ZERO_DIVISOR_CHECK(int, ostack);
         BINARY_OP(int, %, ostack, pc);
 
     DEF_OPC(OPC_LREM)
-	ZERO_DIVISOR_CHECK(long long, ostack);
+	    ZERO_DIVISOR_CHECK(long long, ostack);
         BINARY_OP(long long, %, ostack, pc);
 
     DEF_OPC(OPC_FREM) {
@@ -1258,6 +1259,7 @@ unused:
         } else
                 OPCODE_REWRITE(pc, OPC_INVOKENONVIRTUAL_QUICK);
 
+        // pc not change here, so while loop goes OPC_INVOKESUPER_QUICK next time
         DISPATCH(pc)
     }
 
@@ -1551,9 +1553,8 @@ unused:
 
 invokeMethod:
 {
-    /* Create new frame first.  This is also created for natives
-       so that they appear correctly in the stack trace */
-
+    // Create new frame first.
+    // This is also created for natives so that they appear correctly in the stack trace
     Frame *new_frame = (Frame *)(arg1 + new_mb->max_locals);
     Object *sync_ob = NULL;
 
@@ -1562,7 +1563,7 @@ invokeMethod:
         THROW_EXCEPTION("java/lang/StackOverflowError", NULL);
     }
 
-    new_frame->mb = new_mb;
+    new_frame->mb = new_mb;   // new mb supposed to be just after this frame?
     new_frame->lvars = arg1;
     new_frame->ostack = (u4*)(new_frame+1);
     new_frame->prev = frame;
@@ -1586,7 +1587,9 @@ invokeMethod:
         if(exceptionOccured0(ee))
                 goto throwException;
 	    pc += *pc == OPC_INVOKEINTERFACE ? 5 : 3;
-    } else {
+    }
+    // ready to execute
+    else {
         frame = new_frame;
         mb = new_mb;
         lvars = new_frame->lvars;
