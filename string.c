@@ -94,7 +94,7 @@ Object *createString(unsigned char *utf8) {
     convertUtf8(utf8, data);
 
     INST_DATA(ob)[count_offset] = len; 
-    INST_DATA(ob)[value_offset] = (u4)array; 
+    INST_DATA(ob)[value_offset] = (u8)array;
 
     return ob;
 }
@@ -189,7 +189,7 @@ Object *createStringFromUnicode(short *unicode, int len) {
     memcpy(data, unicode, len*sizeof(short));
 
     INST_DATA(ob)[count_offset] = len; 
-    INST_DATA(ob)[value_offset] = (u4)array; 
+    INST_DATA(ob)[value_offset] = (u8)array;
     return ob;
 }
 

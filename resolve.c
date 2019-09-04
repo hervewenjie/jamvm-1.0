@@ -255,7 +255,7 @@ retry:
 }
 
 // resolve constant in pool
-u4 resolveSingleConstant(Class *class, int cp_index) {
+u8 resolveSingleConstant(Class *class, int cp_index) {
     ConstantPool *cp = &(CLASS_CB(class)->constant_pool);
 
 retry:

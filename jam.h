@@ -386,8 +386,8 @@ typedef struct classblock {
 typedef struct frame {
    MethodBlock *mb;
    unsigned char *last_pc;
-   u4 *lvars;            // local vars
-   u4 *ostack;           // op stack
+   u8 *lvars;            // local vars
+   u8 *ostack;           // op stack
    struct frame *prev;
 } Frame;
 
@@ -395,7 +395,7 @@ typedef struct jni_frame {
    MethodBlock *mb;
    Object **next_ref;
    Object **lrefs;
-   u4 *ostack;
+   u8 *ostack;
    struct frame *prev;
 } JNIFrame;
 
@@ -408,7 +408,7 @@ typedef struct exec_env {
 } ExecEnv;
 
 #define CLASS_CB(classRef)		((ClassBlock*)(classRef+1))
-#define INST_DATA(objectRef)		((u4*)(objectRef+1))
+#define INST_DATA(objectRef)		((u8*)(objectRef+1))
 
 #define IS_CLASS(object)		(!object->class || (object->class == java_lang_Class))
 
@@ -492,7 +492,7 @@ extern Class *resolveClass(Class *class, int index, int init);
 extern MethodBlock *resolveMethod(Class *class, int index);
 extern MethodBlock *resolveInterfaceMethod(Class *class, int index);
 extern FieldBlock *resolveField(Class *class, int index);
-u4 resolveSingleConstant(Class *class, int cp_index);
+u8 resolveSingleConstant(Class *class, int cp_index);
 extern char isInstanceOf(Class *class, Class *test);
 
 /* From jam - should be execute? */
@@ -523,7 +523,7 @@ extern void printStackTrace(Object *excep, Object *writer);
 
 /* interp */
 
-extern u4 *executeJava();
+extern u8 *executeJava();
 
 /* String */
 
@@ -557,7 +557,7 @@ extern char *getDllPath();
 extern char *getDllName(char *path, char *name);
 extern void initialiseDll();
 
-extern u4 *resolveNativeWrapper(Class *class, MethodBlock *mb, u4 *ostack);
+extern u8 *resolveNativeWrapper(Class *class, MethodBlock *mb, u8 *ostack);
 
 /* Threading */
 

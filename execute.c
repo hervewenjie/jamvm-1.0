@@ -26,10 +26,10 @@
 #include "lock.h"
 
 #define VA_DOUBLE(args, sp)  *(u8*)sp = va_arg(args, u8); sp+=2
-#define VA_SINGLE(args, sp)  *sp++ = va_arg(args, u4)
+#define VA_SINGLE(args, sp)  *sp++ = va_arg(args, u8)
 
 #define JA_DOUBLE(args, sp)  (u8*)sp++; *((u8*)sp) = *args++
-#define JA_SINGLE(args, sp)  *sp++ = *(u4*)args; args++
+#define JA_SINGLE(args, sp)  *sp++ = *(u8*)args; args++
 
 // execute non-static & static method
 void *executeMethodArgs(Object *ob, Class *class, MethodBlock *mb, ...) {
@@ -43,7 +43,7 @@ void *executeMethodArgs(Object *ob, Class *class, MethodBlock *mb, ...) {
     return ret;
 }
 
-//void create_top_frame_tmp(ExecEnv *ee, Class *class, MethodBlock *mb, u4 *sp, void *ret) {
+//void create_top_frame_tmp(ExecEnv *ee, Class *class, MethodBlock *mb, u8 *sp, void *ret) {
 //    Frame *last = ee->last_frame;
 //    Frame *dummy = (Frame *)(last->ostack+last->mb->max_stack);
 //    Frame *new_frame;
@@ -77,7 +77,7 @@ void *executeMethodVaList(Object *ob, Class *class, MethodBlock *mb, va_list jar
 
     ExecEnv *ee = getExecEnv();
     void *ret;
-    u4 *sp;
+    u8 *sp;
 
     // create frame
     CREATE_TOP_FRAME(ee, class, mb, sp, ret);
@@ -86,7 +86,7 @@ void *executeMethodVaList(Object *ob, Class *class, MethodBlock *mb, va_list jar
 
     // index 0 of local variable table is always "this"
     if(ob)
-        *sp++ = (u4) ob; /* push receiver first */
+        *sp++ = (u8) ob; /* push receiver first */
 
     SCAN_SIG(sig, VA_DOUBLE(jargs, sp), VA_SINGLE(jargs, sp))
 
@@ -96,7 +96,7 @@ void *executeMethodVaList(Object *ob, Class *class, MethodBlock *mb, va_list jar
 
     // native
     if(mb->access_flags & ACC_NATIVE)
-        (*(u4 *(*)(Class*, MethodBlock*, u4*))mb->native_invoker)(class, mb, ret);
+        (*(u8 *(*)(Class*, MethodBlock*, u8*))mb->native_invoker)(class, mb, ret);
     // java
     else
         executeJava();
@@ -116,14 +116,14 @@ void *executeMethodList(Object *ob, Class *class, MethodBlock *mb, u8 *jargs) {
 
     ExecEnv *ee = getExecEnv();
     void *ret;
-    u4 *sp;
+    u8 *sp;
 
     CREATE_TOP_FRAME(ee, class, mb, sp, ret);
 
     /* copy args onto stack */
 
     if(ob)
-        *sp++ = (u4) ob; /* push receiver first */
+        *sp++ = (u8) ob; /* push receiver first */
 
     SCAN_SIG(sig, JA_DOUBLE(jargs, sp), JA_SINGLE(jargs, sp))
 
@@ -131,7 +131,7 @@ void *executeMethodList(Object *ob, Class *class, MethodBlock *mb, u8 *jargs) {
         objectLock(ob ? ob : (Object*)mb->class);
 
     if(mb->access_flags & ACC_NATIVE)
-        (*(u4 *(*)(Class*, MethodBlock*, u4*))mb->native_invoker)(class, mb, ret);
+        (*(u8 *(*)(Class*, MethodBlock*, u8*))mb->native_invoker)(class, mb, ret);
     else
         executeJava();
 

@@ -255,12 +255,12 @@ label(opcode)
     break;
 #endif
 
-u4 *executeJava() {
+u8 *executeJava() {
     ExecEnv *ee = getExecEnv();              // execute env
     Frame *frame = ee->last_frame;           // frame
     MethodBlock *mb = frame->mb;             // method
-    u4 *lvars = frame->lvars;                // local vars
-    u4 *ostack = frame->ostack;              // stack
+    u8 *lvars = frame->lvars;                // local vars
+    u8 *ostack = frame->ostack;              // stack
     volatile unsigned char *pc = mb->code;   // code -> pc
     ClassBlock* class_tmp = CLASS_CB(mb->class);
     ConstantPool *cp = &(CLASS_CB(mb->class)->constant_pool);
@@ -268,7 +268,7 @@ u4 *executeJava() {
     Object *this = (Object*)lvars[0];        // method local index 0 is pointer to this object
     Class *new_class;                        //
     MethodBlock *new_mb;                     //
-    u4 *arg1;                                //
+    u8 *arg1;                                //
 
 #ifdef THREADED
     static void *handlers[] = {
@@ -629,8 +629,8 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_DUP_X1) {    // DUP_X1
-        u4 word1 = ostack[-1];
-        u4 word2 = ostack[-2];
+        u8 word1 = ostack[-1];
+        u8 word2 = ostack[-2];
         ostack[-2] = word1;
         ostack[-1] = word2;
         *ostack++ = word1;
@@ -639,9 +639,9 @@ unused:
     }
 
     DEF_OPC(OPC_DUP_X2) {    // DUP_X2
-        u4 word1 = ostack[-1];
-        u4 word2 = ostack[-2];
-        u4 word3 = ostack[-3];
+        u8 word1 = ostack[-1];
+        u8 word2 = ostack[-2];
+        u8 word3 = ostack[-3];
         ostack[-3] = word1;
         ostack[-2] = word3;
         ostack[-1] = word2;
@@ -657,9 +657,9 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_DUP2_X1) {  // DUP2_X1
-        u4 word1 = ostack[-1];
-        u4 word2 = ostack[-2];
-        u4 word3 = ostack[-3];
+        u8 word1 = ostack[-1];
+        u8 word2 = ostack[-2];
+        u8 word3 = ostack[-3];
         ostack[-3] = word2;
         ostack[-2] = word1;
         ostack[-1] = word3;
@@ -671,10 +671,10 @@ unused:
     }
 
     DEF_OPC(OPC_DUP2_X2) {  // DUP2_X2
-        u4 word1 = ostack[-1];
-        u4 word2 = ostack[-2];
-        u4 word3 = ostack[-3];
-        u4 word4 = ostack[-4];
+        u8 word1 = ostack[-1];
+        u8 word2 = ostack[-2];
+        u8 word3 = ostack[-3];
+        u8 word4 = ostack[-4];
         ostack[-4] = word2;
         ostack[-3] = word1;
         ostack[-2] = word4;
@@ -687,7 +687,7 @@ unused:
     }
 
     DEF_OPC(OPC_SWAP) {     // SWAP
-        u4 word1 = ostack[-1];
+        u8 word1 = ostack[-1];
         ostack[-1] = ostack[-2];
         ostack[-2] = word1;
         pc += 1;
@@ -943,7 +943,7 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_JSR)
-        *ostack++ = (u4)pc+3;
+        *ostack++ = (u8)pc+3;
         pc += BRANCH(pc);
         DISPATCH(pc)
 
@@ -1143,7 +1143,7 @@ unused:
     {
         FieldBlock *fb = (FieldBlock*)CP_INFO(cp, CP_DINDEX(pc));
         Object *o = (Object *)*--ostack;
-        u4 *addr;
+        u8 *addr;
 
 	    NULL_POINTER_CHECK(o);
 		
@@ -1154,7 +1154,7 @@ unused:
             *(u8*)ostack = v;
             ostack += 2;
         } else {
-            u4 v = *addr;
+            u8 v = *addr;
             *ostack++ = v; 
         }
 
@@ -1177,7 +1177,7 @@ unused:
             addr = (u8*)&(INST_DATA(o)[fb->offset]);
             *addr = v;
         } else {
-            u4 *addr, v = *--ostack;
+            u8 *addr, v = *--ostack;
             o = (Object *)*--ostack;
 	        NULL_POINTER_CHECK(o);
 
@@ -1340,7 +1340,7 @@ unused:
         if((ob = allocObject(class)) == NULL)
             goto throwException;
 
-        *ostack++ = (u4)ob;
+        *ostack++ = (u8)ob;
         pc += 3;
         DISPATCH(pc)
     }
@@ -1355,7 +1355,7 @@ unused:
         if((ob = allocTypeArray(type, count)) == NULL)
             goto throwException;
 
-        *ostack++ = (u4)ob;
+        *ostack++ = (u8)ob;
         pc += 2;
         DISPATCH(pc)
     }
@@ -1387,7 +1387,7 @@ unused:
         if((ob = allocArray(array_class, count, 4)) == NULL)
             goto throwException;
 
-        ostack[-1] = (u4)ob;
+        ostack[-1] = (u8)ob;
         pc += 3;
         DISPATCH(pc)
     }
@@ -1506,7 +1506,7 @@ unused:
         if((ob = allocMultiArray(class, dim, ostack)) == NULL)
             goto throwException;
 
-        *ostack++ = (u4)ob;
+        *ostack++ = (u8)ob;
         pc += 4;
         DISPATCH(pc)
     }
@@ -1536,7 +1536,7 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_JSR_W)
-        *ostack++ = (u4)pc+3;
+        *ostack++ = (u8)pc+3;
         pc += BRANCH_W(pc);
         DISPATCH(pc)
 
@@ -1565,7 +1565,7 @@ invokeMethod:
 
     new_frame->mb = new_mb;   // new mb supposed to be just after this frame?
     new_frame->lvars = arg1;
-    new_frame->ostack = (u4*)(new_frame+1);
+    new_frame->ostack = (u8*)(new_frame+1);
     new_frame->prev = frame;
     frame->last_pc = (unsigned char*)pc;
 
@@ -1577,7 +1577,7 @@ invokeMethod:
     }
 
     if(new_mb->access_flags & ACC_NATIVE) {
-        ostack = (*(u4 *(*)(Class*, MethodBlock*, u4*))new_mb->native_invoker)(new_mb->class, new_mb, arg1);
+        ostack = (*(u8 *(*)(Class*, MethodBlock*, u8*))new_mb->native_invoker)(new_mb->class, new_mb, arg1);
 
         if(sync_ob)
             objectUnlock(sync_ob);
@@ -1648,7 +1648,7 @@ throwException:
         this = (Object*)lvars[0];
         cp = &(CLASS_CB(mb->class)->constant_pool);
 
-        *ostack++ = (u4)excep;
+        *ostack++ = (u8)excep;
         DISPATCH(pc)
     }
 #ifndef THREADED

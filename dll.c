@@ -164,14 +164,14 @@ void *resolveNativeMethod(MethodBlock *mb) {
     return func;
 }
 
-u4 *resolveNativeWrapper(Class *class, MethodBlock *mb, u4 *ostack) {
+u8 *resolveNativeWrapper(Class *class, MethodBlock *mb, u8 *ostack) {
     void *func = resolveNativeMethod(mb);
 
     if(func == NULL) {
         signalException("java/lang/UnsatisfiedLinkError", mb->name);
         return ostack;
     }
-    return (*(u4 *(*)(Class*, MethodBlock*, u4*))func)(class, mb, ostack);
+    return (*(u8 *(*)(Class*, MethodBlock*, u8*))func)(class, mb, ostack);
 }
 
 void initialiseDll() {
@@ -262,13 +262,13 @@ void *lookupLoadedDlls0(char *name) {
 }
 
 extern int extraArgSpace(MethodBlock *mb);
-extern u4 *callJNIMethod(void *env, Class *class, char *sig, int extra, u4 *ostack, unsigned char *f);
+extern u8 *callJNIMethod(void *env, Class *class, char *sig, int extra, u8 *ostack, unsigned char *f);
 extern struct _JNINativeInterface Jam_JNINativeInterface;
 extern void initJNILrefs();
 
-u4 *callJNIWrapper(Class *class, MethodBlock *mb, u4 *ostack) {
+u8 *callJNIWrapper(Class *class, MethodBlock *mb, u8 *ostack) {
     void *env = &Jam_JNINativeInterface;
-    u4 *ret;
+    u8 *ret;
 
     initJNILrefs();
     return callJNIMethod(&env, (mb->access_flags & ACC_STATIC) ? class : NULL,

@@ -41,7 +41,7 @@ JNIFrame *expandJNILrefs(ExecEnv *ee, JNIFrame *frame, int incr) {
         return NULL;
 
     memcpy(new_frame, frame, sizeof(JNIFrame));
-    new_frame->ostack = (u4*)(new_frame + 1);
+    new_frame->ostack = (u8*)(new_frame + 1);
     ee->last_frame = (Frame*)new_frame;
     memset(frame, 0, incr * sizeof(Object*));
     return new_frame;
@@ -362,10 +362,10 @@ jarray Jam_NewObjectArray(JNIEnv *env, jsize length, jclass elementClass, jobjec
     if(array_class) {
         Object *array = allocArray(array_class, length, 4);
 	if(array && initialElement) {
-            u4 *data = INST_DATA(array) + 1;
+            u8 *data = INST_DATA(array) + 1;
 
 	    while(length--)
-               *data++ = (u4) initialElement;
+               *data++ = (u8) initialElement;
         }
 	return (jarray) addJNILref(array);
     }
@@ -377,7 +377,7 @@ jarray Jam_GetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index) {
 }
 
 void Jam_SetObjectArrayElement(JNIEnv *env, jobjectArray array, jsize index, jobject value) {
-    INST_DATA((Object*)array)[index+1] = (u4)value;
+    INST_DATA((Object*)array)[index+1] = (u8)value;
 }
 
 jint Jam_RegisterNatives(JNIEnv *env, jclass clazz, const JNINativeMethod *methods, jint nMethods) {
@@ -453,7 +453,7 @@ jobject Jam_GetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID) {
 void Jam_SetObjectField(JNIEnv *env, jobject obj, jfieldID fieldID, jobject value) {
     Object *ob = (Object*) obj;
     FieldBlock *fb = (FieldBlock *) fieldID;
-    INST_DATA(ob)[fb->offset] = (u4)value;
+    INST_DATA(ob)[fb->offset] = (u8)value;
 }
 
 jobject Jam_GetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
@@ -463,7 +463,7 @@ jobject Jam_GetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID) {
 
 void Jam_SetStaticObjectField(JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value) {
     FieldBlock *fb = (FieldBlock *) fieldID;
-    fb->static_value = (u4)value;
+    fb->static_value = (u8)value;
 }
 
 #define VIRTUAL_METHOD(type, native_type)                                                        \

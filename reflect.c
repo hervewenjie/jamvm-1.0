@@ -26,7 +26,7 @@
 char *convertClassArray2Sig(Object *array) {
     int count = 0, len;
     char *sig, *pntr;
-    u4 *data;
+    u8 *data;
 
     /* Calculate size of signature first */
 
@@ -95,11 +95,11 @@ Object *invoke(Object *ob, Class *class, MethodBlock *mb, Object *arg_array) {
 
     ExecEnv *ee = getExecEnv();
     void *ret;
-    u4 *sp;
+    u8 *sp;
 
     CREATE_TOP_FRAME(ee, class, mb, sp, ret);
 
-    if(ob) *sp++ = (u4)ob;
+    if(ob) *sp++ = (u8)ob;
 
     while(*++sig != ')')
         switch(*sig) {
@@ -118,7 +118,7 @@ Object *invoke(Object *ob, Class *class, MethodBlock *mb, Object *arg_array) {
                 break;
 
             default:
-		*sp++ = (u4) *args++;
+		*sp++ = (u8) *args++;
 
                 if(*sig == '[')
                     while(*++sig == '[');
@@ -131,7 +131,7 @@ Object *invoke(Object *ob, Class *class, MethodBlock *mb, Object *arg_array) {
         objectLock(ob ? ob : (Object*)mb->class);
 
     if(mb->access_flags & ACC_NATIVE)
-        (*(u4 *(*)(Class*, MethodBlock*, u4*))mb->native_invoker)(class, mb, ret);
+        (*(u8 *(*)(Class*, MethodBlock*, u8*))mb->native_invoker)(class, mb, ret);
     else
         executeJava();
 

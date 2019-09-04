@@ -36,8 +36,8 @@ static int verboseclass = FALSE;
 #define MIN_STACK 2*KB
 
 static int java_stack = 127*KB;
-static int min_heap   = 512*MB;
-static int max_heap   = 1024*MB;
+static int min_heap   = 64*MB;
+static int max_heap   = 128*MB;
 
 char VM_initing = TRUE;
 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
     MethodBlock *mb;     // main method
     Object *array;
     char *cpntr;
-    u4 *args;
+    u8 *args;
     int i;
 
     int class_arg = parseCommandLine(argc, argv);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     args = INST_DATA(array)-class_arg;
 
     for(i = class_arg+1; i < argc; i++)
-        args[i] = (u4)Cstr2String(argv[i]);
+        args[i] = (u8)Cstr2String(argv[i]);
 
     // Call the main method
     executeStaticMethod(class, mb, array);

@@ -197,7 +197,7 @@ void initialiseJavaStack(ExecEnv *ee) {
 
    mb->max_stack = 0;
    top->mb = mb;
-   top->ostack = (u4*)(top+1);
+   top->ostack = (u8*)(top+1);
    top->prev = 0;
 
    ee->stack = stack;
@@ -284,7 +284,7 @@ void *threadStart(void *arg) {
     pthread_mutex_unlock(&lock);
     enableSuspend(thread);
 
-    INST_DATA(jThread)[vmData_offset] = (u4)&dead_thread;
+    INST_DATA(jThread)[vmData_offset] = (u8)&dead_thread;
     free(thread);
     free(ee->stack);
     free(ee);
@@ -322,7 +322,7 @@ void createJavaThread(Object *jThread) {
 
     thread->ee = ee;
     ee->thread = jThread;
-    INST_DATA(jThread)[vmData_offset] = (u4)thread;
+    INST_DATA(jThread)[vmData_offset] = (u8)thread;
     pthread_mutex_unlock(&lock);
 
     if(pthread_create(&thread->tid, &attributes, threadStart, thread)) {
@@ -375,10 +375,10 @@ Thread *attachThread(char *name, char is_daemon, void *stack_base) {
     ee->thread = allocObject(thread_class);
 
     INST_DATA(ee->thread)[daemon_offset] = FALSE;
-    INST_DATA(ee->thread)[name_offset] = (u4)Cstr2String(name);
+    INST_DATA(ee->thread)[name_offset] = (u8)Cstr2String(name);
     INST_DATA(ee->thread)[group_offset] = INST_DATA(main_ee.thread)[group_offset];
     INST_DATA(ee->thread)[priority_offset] = 5;
-    INST_DATA(ee->thread)[vmData_offset] = (u4)thread;
+    INST_DATA(ee->thread)[vmData_offset] = (u8)thread;
 
     /* add to thread list... */
 
@@ -670,10 +670,10 @@ void initialiseMainThread(int stack_size) {
     rmveThrd_mtbl_idx = remove_thread->method_table_index;
 
     INST_DATA(main_ee.thread)[daemon_offset] = FALSE;
-    INST_DATA(main_ee.thread)[name_offset] = (u4)Cstr2String("main");
+    INST_DATA(main_ee.thread)[name_offset] = (u8)Cstr2String("main");
     INST_DATA(main_ee.thread)[group_offset] = root->static_value;
     INST_DATA(main_ee.thread)[priority_offset] = 5;
-    INST_DATA(main_ee.thread)[vmData_offset] = (u4)&main;
+    INST_DATA(main_ee.thread)[vmData_offset] = (u8)&main;
 
     initialiseSignals();
 

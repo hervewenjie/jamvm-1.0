@@ -26,13 +26,13 @@ int extraArgSpace(MethodBlock *mb) {
     return (mb->access_flags & ACC_STATIC ? mb->args_count+1 : mb->args_count) + 1;
 }
 
-u4 *callJNIMethod(void *env, Class *class, char *sig, int extra, u4 *ostack, unsigned char *f) {
+u8 *callJNIMethod(void *env, Class *class, char *sig, int extra, u8 *ostack, unsigned char *f) {
     u4 args[extra];
-    u4 *opntr = ostack;
-    u4 *apntr = &args[2];
+    u8 *opntr = ostack;
+    u8 *apntr = &args[2];
    
-    args[0] = (u4)env;
-    args[1] = class ? (u4)class : *opntr++;
+    args[0] = (u8)env;
+    args[1] = class ? (u8)class : *opntr++;
 
     u8 apntr_tmp = *((u8*)apntr);
     u8 opntr_tmp = *((u8*)opntr);
@@ -58,7 +58,7 @@ u4 *callJNIMethod(void *env, Class *class, char *sig, int extra, u4 *ostack, uns
 //            break;
 
         default:
-            *ostack++ = (*(u4 (*)())f)();
+            *ostack++ = (*(u8 (*)())f)();
             break;
     }
 

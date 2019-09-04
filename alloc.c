@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <string.h>
 
 #include "jam.h"
 #include "alloc.h"
@@ -54,7 +55,7 @@
 #define OBJECT_GRAIN		8
 #define	ALLOC_BIT		1
 
-#define HEADER(ptr)		*((unsigned int*)ptr)
+#define HEADER(ptr)		*((u8*)ptr)
 #define HDR_SIZE(hdr)		(hdr & ~(ALLOC_BIT|FLC_BIT))
 #define HDR_ALLOCED(hdr)	(hdr & ALLOC_BIT)
 
@@ -70,7 +71,7 @@
 static int verbosegc;
 
 typedef struct chunk {
-    unsigned int header;
+    uintptr_t header;
     struct chunk *next;
 } Chunk;
 
@@ -140,7 +141,7 @@ void initialiseAlloc(int min, int max, int verbose) {
     char *mem = (char*)mmap(0, max, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 #endif
 
-    if((int)mem <= 0) {
+    if(mem == MAP_FAILED) {
         printf("Couldn't allocate the heap.  Aborting.\n");
 	    exit(0);
     }
@@ -227,7 +228,7 @@ static void doMark(Thread *self) {
 #endif
 
         if(HDR_ALLOCED(hdr)) {
-            Object *ob = (Object*)(ptr+HEADER_SIZE);
+            Object *ob = (Object*)(u8*)(ptr+HEADER_SIZE);
 
             if(IS_MARKED(ob))
                 markChildren(ob);
@@ -581,7 +582,10 @@ void expandHeap(int min) {
     allocMarkBits();
 }
 
+static int total = 0;
 void *gcMalloc(int len) {
+    total += len;
+    printf("===============gcMalloc=%d\n", total);
     static int state = 0; /* allocation failure action */
 
     int n = (len+HEADER_SIZE+OBJECT_GRAIN-1)&~(OBJECT_GRAIN-1);
@@ -598,9 +602,8 @@ void *gcMalloc(int len) {
     disableSuspend(self = threadSelf());
     lockVMLock(heap_lock, self);
 
-    /* Scan freelist looking for a chunk big enough to
-       satisfy allocation request */
-
+    // Scan freelist looking for a chunk big enough to
+    // satisfy allocation request
     for(;;) {
 #ifdef TRACEALLOC
        tries = 0;
@@ -753,14 +756,14 @@ void markClassStatics(Class *class) {
 void scanThread(Thread *thread) {
     ExecEnv *ee = thread->ee;
     Frame *frame = ee->last_frame;
-    u4 *end, *slot;
+    u8 *end, *slot;
 
     TRACE_GC(("Scanning stacks for thread 0x%x\n", thread));
 
     MARK(ee->thread);
 
-    slot = (u4*)getStackTop(thread);
-    end = (u4*)getStackBase(thread);
+    slot = (u8*)getStackTop(thread);
+    end = (u8*)getStackBase(thread);
 
     for(; slot < end; slot++)
         if(IS_OBJECT(*slot)) {
@@ -812,7 +815,7 @@ void markChildren(Object *ob) {
     } else {
         Class *class = ob->class;
         ClassBlock *cb = CLASS_CB(class);
-        u4 *body = INST_DATA(ob);
+        u8 *body = INST_DATA(ob);
 
         if(cb->name[0] == '[') {
             if((cb->name[1] == 'L') || (cb->name[1] == '[')) {
@@ -1046,7 +1049,7 @@ Object *allocMultiArray(Class *array_class, int dim, int *count) {
             return NULL;
 
         for(i = 1; i <= *count; i++)
-            INST_DATA(array)[i] = (u4)allocMultiArray(aclass, dim-1, count+1);
+            INST_DATA(array)[i] = (u8)allocMultiArray(aclass, dim-1, count+1);
     } else {
         int el_size;
 

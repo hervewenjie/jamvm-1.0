@@ -138,7 +138,7 @@ int mapPC2LineNo(MethodBlock *mb, unsigned char *pc_pntr) {
 
 void setStackTrace(Object *excep) {
     Class *throw_class = findSystemClass("java/lang/Throwable");
-    FieldBlock *field = findField(throw_class, "backtrace", "Ljava/lang/Object;");
+//    FieldBlock *field = findField(throw_class, "backtrace", "Ljava/lang/Object;");
     Object *array;
     int *data;
 
@@ -167,7 +167,7 @@ void setStackTrace(Object *excep) {
         } while((bottom = bottom->prev)->prev != NULL);
     }
 
-    INST_DATA(excep)[field->offset] = (int)array;
+//    INST_DATA(excep)[field->offset] = (int)array;
 }
 
 void printStackTrace(Object *excep, Object *writer) {
