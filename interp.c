@@ -92,16 +92,21 @@
     DISPATCH(pc)                                                      \
 }
 
+#define ARRAY_DATA(arrayRef, type)   ((type*)(((uintptr_t*)(arrayRef+1))+1))
+
 #define ARRAY_LOAD(TYPE, ostack, pc)                                  \
 {                                                                     \
     TYPE *element;                                                    \
     int i = ostack[-1];						                          \
+    printf("i=%d\n", i); \
     Object *array = (Object *)ostack[-2];			                  \
+    printf("array=%p\n", array); \
     NULL_POINTER_CHECK(array);                                        \
     ARRAY_BOUNDS_CHECK(array, i);                                     \
-    element = (TYPE *)(((char *)INST_DATA(array)) +                   \
-                              (i * sizeof(TYPE)) + 4);                \
-    ostack[-2] = *element;					                   \
+    element = (TYPE *)(((char *)INST_DATA(array)) + (i * sizeof(TYPE)) + 8); \
+    printf("element=%p\n", element);              \
+    ostack[-2] = *element;					      \
+    printf("*element=%p\n", *element);              \
     ostack -= 1;					              \
     pc += 1;						              \
     DISPATCH(pc)						      \
@@ -265,6 +270,10 @@ u8 *executeJava() {
     ClassBlock* class_tmp = CLASS_CB(mb->class);
     ConstantPool *cp = &(CLASS_CB(mb->class)->constant_pool);
 
+    if (strcmp("java/lang/Runtime", class_tmp->name)==0 && strcmp("<clinit>", mb->name)==0) {
+        int herve = 1;
+    }
+
     Object *this = (Object*)lvars[0];        // method local index 0 is pointer to this object
     Class *new_class;                        //
     MethodBlock *new_mb;                     //
@@ -400,6 +409,7 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_LDC)          // LDC
+        printf("ldc %d\n", CP_SINDEX(pc));
         *ostack++ = resolveSingleConstant(mb->class, CP_SINDEX(pc));
         OPCODE_REWRITE(pc, OPC_LDC_QUICK); // write for next time?
         pc += 2;
@@ -512,7 +522,7 @@ unused:
     DEF_OPC(OPC_IALOAD)       // IALOAD
     DEF_OPC(OPC_AALOAD)       // AALOAD
     DEF_OPC(OPC_FALOAD)       // FALOAD
-        ARRAY_LOAD(int, ostack, pc);
+        ARRAY_LOAD(long, ostack, pc);
 
     DEF_OPC(OPC_LALOAD)       // LALOAD
         ARRAY_LOAD_LONG(long long, ostack, pc);
@@ -1025,6 +1035,9 @@ unused:
         frame->last_pc = (unsigned char*)pc;
 	    fb = resolveField(mb->class, CP_DINDEX(pc));
 
+	    if (CP_DINDEX(pc)==2 && strcmp(fb->name, "current")==0) {
+	        int herve = 1;
+	    }
         if(exceptionOccured0(ee))
             goto throwException;
 
@@ -1038,6 +1051,7 @@ unused:
     DEF_OPC(OPC_GETSTATIC_QUICK)   // GETSTATIC_QUICK
     {
         FieldBlock *fb = (FieldBlock *)CP_INFO(cp, CP_DINDEX(pc));
+
         *ostack++ = fb->static_value;
         pc += 3;
         DISPATCH(pc)
@@ -1215,6 +1229,9 @@ unused:
     {
         int idx;
         WITH_OPCODE_CHANGE_CP_DINDEX(pc, OPC_INVOKEVIRTUAL, idx);
+        if (idx==64) {
+            int herve = 1;
+        }
 
         frame->last_pc = (unsigned char*)pc;
         new_mb = resolveMethod(mb->class, idx);
@@ -1246,13 +1263,14 @@ unused:
 
         frame->last_pc = (unsigned char*)pc;
         new_mb = resolveMethod(mb->class, idx);
- 
+        if (idx==101 && strcmp("<init>", new_mb->name)==0) {
+            int herve = 1;
+        }
         if(exceptionOccured0(ee))
             goto throwException;
 
         /* Check if invoking a super method... */
-        if((CLASS_CB(mb->class)->access_flags & ACC_SUPER) &&
-                  ((new_mb->access_flags & ACC_PRIVATE) == 0) && (new_mb->name[0] != '<')) {
+        if((CLASS_CB(mb->class)->access_flags & ACC_SUPER) && ((new_mb->access_flags & ACC_PRIVATE) == 0) && (new_mb->name[0] != '<')) {
                 OPCODE_REWRITE_OPERAND2(pc, OPC_INVOKESUPER_QUICK,
                         new_mb->method_table_index >> 8,
                         new_mb->method_table_index & 0xff);
@@ -1278,20 +1296,22 @@ unused:
     DEF_OPC(OPC_INVOKESTATIC)              // INVOKESTATIC
         frame->last_pc = (unsigned char*)pc;
         new_mb = resolveMethod(mb->class, CP_DINDEX(pc));
- 
+        if (strcmp(new_mb->name, "getRuntime")==0) {
+            int herve = 0;
+        }
         if(exceptionOccured0(ee))
             goto throwException;
-            OPCODE_REWRITE(pc, OPC_INVOKESTATIC_QUICK);
-            DISPATCH(pc)
+        OPCODE_REWRITE(pc, OPC_INVOKESTATIC_QUICK);
+        DISPATCH(pc)
 
-        DEF_OPC(OPC_INVOKESTATIC_QUICK)
+    DEF_OPC(OPC_INVOKESTATIC_QUICK)
         {
             new_mb = (MethodBlock *)CP_INFO(cp, CP_DINDEX(pc));
             arg1 = ostack - new_mb->args_count;
             goto invokeMethod;
         }
 
-        DEF_OPC(OPC_INVOKEINTERFACE)
+    DEF_OPC(OPC_INVOKEINTERFACE)
         frame->last_pc = (unsigned char*)pc;
         new_mb = resolveInterfaceMethod(mb->class, CP_DINDEX(pc));
  
@@ -1311,7 +1331,9 @@ unused:
         Object *array = (Object *)ostack[-1];
 	    NULL_POINTER_CHECK(array);
 
-        ostack[-1] = *INST_DATA(array);
+//        ostack[-1] = *INST_DATA(array);
+        int i_tmp = ARRAY_LEN_READ(array);
+        ostack[-1] = ARRAY_LEN_READ(array);
         pc += 1;
         DISPATCH(pc)
     }
@@ -1544,13 +1566,18 @@ unused:
         DISPATCH(pc)
 
     DEF_OPC(OPC_INVOKEVIRTUAL_QUICK)
+    // pc[0] opcode
+    // pc[1] method table index
+    // pc[2] args count
         arg1 = ostack - pc[2];
 
-	NULL_POINTER_CHECK(*arg1);
+        unsigned char char_tmp = pc[2];
+        u8 tmp = *arg1;
+	    NULL_POINTER_CHECK(*arg1);
 
         new_class = (*(Object **)arg1)->class;
         new_mb = CLASS_CB(new_class)->method_table[pc[1]];
-
+        int herve = 1;
 invokeMethod:
 {
     // Create new frame first.
@@ -1605,7 +1632,6 @@ methodReturn:
     /* Set interpreter state to previous frame */
 
     frame = frame->prev;
-
     if(frame->mb == NULL) {
         /* The previous frame is a dummy frame - this indicates
            top of this Java invocation. */
@@ -1614,7 +1640,7 @@ methodReturn:
 
     if(mb->access_flags & ACC_SYNCHRONIZED) {
         Object *sync_ob = mb->access_flags & ACC_STATIC ? (Object*)mb->class : this;
-	objectUnlock(sync_ob);
+	    objectUnlock(sync_ob);
     }
 
     mb = frame->mb;

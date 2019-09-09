@@ -353,6 +353,13 @@ u8 *getClassLoader0(Class *class, MethodBlock *mb, u8 *ostack) {
     return ostack;
 }
 
+uintptr_t *getClassLoader(Class *class, MethodBlock *mb, uintptr_t *ostack) {
+    Class *clazz = (Class*)ostack[0];
+    ClassBlock* cb_tmp = (uintptr_t)CLASS_CB(clazz);
+    *ostack++ = (uintptr_t)CLASS_CB(clazz)->class_loader;
+    return ostack;
+}
+
 /* java.lang.Throwable */
 
 u8 *fillInStackTrace(Class *class, MethodBlock *mb, u8 *ostack) {
@@ -380,11 +387,11 @@ u8 *currentClassLoader(Class *class, MethodBlock *mb, u8 *ostack) {
 u8 *getClassContext(Class *class, MethodBlock *mb, u8 *ostack) {
     Class *class_class = findArrayClass("[Ljava/lang/Class;");
     Object *array;
-    int *data;
+    u8 *data;
 
     Frame *bottom, *last = getExecEnv()->last_frame;
     int depth = 0;
-/* 
+/*
     for(; last->mb != NULL && isInstanceOf(throw_class, last->mb->class);
           last = last->prev);
 */
@@ -401,11 +408,16 @@ u8 *getClassContext(Class *class, MethodBlock *mb, u8 *ostack) {
         depth = 1;
         do {
             for(; bottom->mb != NULL; bottom = bottom->prev)
-                data[depth++] = (int)bottom->mb->class;
+                data[depth++] = (long)bottom->mb->class;
         } while((bottom = bottom->prev)->prev != NULL);
     }
-
-    *ostack++ = (int)array;
+    int count_tmp = ARRAY_LEN(array);
+    printf("array len=%d\n", count_tmp);
+    u8* tmp = INST_DATA(array);
+    for (int i = 0; i < count_tmp; i++) {
+        printf("array[%d]=%p\n", i, data[i+1]);
+    }
+    *ostack++ = (u8)array;
     return ostack;
 }
 
@@ -570,6 +582,7 @@ char *native_methods[][2] = {
 			     "getClassContext",		(char*)getClassContext,
 			     "getConstructor",		(char*)getConstructor,
 			     "getClassLoader0",		(char*)getClassLoader0,
+                 "getClassLoader",		(char*)getClassLoader,
 			     "constructNative",		(char*)constructNative,
                              "nativeLoad",		(char*)nativeLoad,
                              "nativeGetLibname",	(char*)nativeGetLibname,

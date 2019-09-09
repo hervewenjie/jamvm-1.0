@@ -409,6 +409,10 @@ typedef struct exec_env {
 
 #define CLASS_CB(classRef)		((ClassBlock*)(classRef+1))
 #define INST_DATA(objectRef)		((u8*)(objectRef+1))
+#define ARRAY_LEN(arrayRef)          *(u4*)(arrayRef+1)
+#define ARRAY_LEN_READ(arrayRef)          *(u4*)(arrayRef+1)
+#define ARRAY_LEN_WRITE(arrayRef)          *(u4*)(arrayRef+1)
+
 
 #define IS_CLASS(object)		(!object->class || (object->class == java_lang_Class))
 

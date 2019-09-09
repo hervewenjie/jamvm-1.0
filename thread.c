@@ -178,6 +178,7 @@ Thread *threadSelf0(Object *jThread) {
     return (Thread*)(INST_DATA(jThread)[vmData_offset]);
 }
 
+// get Thread pointer from thread local
 Thread *threadSelf() {
     return (Thread*)pthread_getspecific(threadKey);
 }

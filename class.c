@@ -127,8 +127,7 @@ Class *defineClass(char *data, int offset, int len, Object *class_loader) {
 
     constant_pool = &classblock->constant_pool;
     constant_pool->type = (char *)malloc(cp_count);
-    constant_pool->info = (ConstantPoolEntry *)
-                       malloc(cp_count*sizeof(ConstantPoolEntry));
+    constant_pool->info = (ConstantPoolEntry *)malloc(cp_count*sizeof(ConstantPoolEntry));
 
     for(i = 1; i < cp_count; i++) {
         u1 tag;
@@ -640,8 +639,12 @@ Class *initClass(Class *class) {
       }
    }
 
-   if((mb = findMethod(class, "<clinit>", "()V")) != NULL)
-      executeStaticMethod(class, mb);
+   if (strcmp(cb->name, "java/lang/Runtime")==0) {
+       int herve = 1;
+   }
+   if((mb = findMethod(class, "<clinit>", "()V")) != NULL) {
+       executeStaticMethod(class, mb);
+   }
 
    if(excep = exceptionOccured()) {
        Class *error, *eiie;

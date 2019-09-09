@@ -52,7 +52,7 @@ void initVM() {
    initialiseMonitor();                            // hash table init monitor
    initialiseMainThread(java_stack);               // little fucking complicated
    initialiseString();                             // init java.lang.String
-   initialiseGC(noasyncgc);                        // init GC threads
+   initialiseGC(noasyncgc);                        // create GC threads
    initialiseJNI();                                // init JNI lock
 
    /* No need to check for exception - if one occurs, signalException aborts VM */

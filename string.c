@@ -156,14 +156,14 @@ void initialiseString() {
     if(!inited) {
         FieldBlock *count, *value, *offset;
 
-        /* As we're initialising, VM will abort if String can't be found */
+        // As we're initialising, VM will abort if String can't be found
         string = findSystemClass0("java/lang/String");
 
         count = findField(string, "count", "I");
         value = findField(string, "value", "[C");
         offset = findField(string, "offset", "I");
 
-        /* findField doesn't throw an exception... */
+        // findField doesn't throw an exception...
         if((count == NULL) || (value == NULL) || (offset == NULL)) {
             printf("Error initialising VM (initialiseString)\n");
             exit(0);

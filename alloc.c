@@ -55,7 +55,7 @@
 #define OBJECT_GRAIN		8
 #define	ALLOC_BIT		1
 
-#define HEADER(ptr)		*((u8*)ptr)
+#define HEADER(ptr)		    *((u8*)ptr)
 #define HDR_SIZE(hdr)		(hdr & ~(ALLOC_BIT|FLC_BIT))
 #define HDR_ALLOCED(hdr)	(hdr & ALLOC_BIT)
 
@@ -160,7 +160,8 @@ void initialiseAlloc(int min, int max, int verbose) {
     heapmax = heapbase+((max-(heapbase-mem))&~(OBJECT_GRAIN-1));
 
     freelist = (Chunk*)heapbase;
-    freelist->header = heapfree = heaplimit-heapbase;
+    heapfree = heaplimit-heapbase;
+    freelist->header = heapfree;
     freelist->next = NULL;
 
     TRACE_GC(("Alloced heap size 0x%x\n",heaplimit-heapbase));
@@ -192,19 +193,17 @@ static void doMark(Thread *self) {
     markJNIGlobalRefs();
     scanThreads();
 
-    /* Grab the run and has finalizer list locks - some thread may
-       be inside a suspension-blocked region changing these lists.
-       Grabbing ensures any thread has left - they'll self-suspend */
-
+    // Grab the run and has finalizer list locks - some thread may
+    // be inside a suspension-blocked region changing these lists.
+    // Grabbing ensures any thread has left - they'll self-suspend
     lockVMLock(has_fnlzr_lock, self);
     unlockVMLock(has_fnlzr_lock, self);
     lockVMWaitLock(run_fnlzr_lock, self);
 
-    /* Mark any objects waiting to be finalized - they were found to
-       be garbage on a previous gc but we haven't got round to finalizing
-       them yet - we must mark them as they, and all objects they ref,
-       cannot be deleted until the finalizer is ran... */
-
+    // Mark any objects waiting to be finalized - they were found to
+    // be garbage on a previous gc but we haven't got round to finalizing
+    // them yet - we must mark them as they, and all objects they ref,
+    // cannot be deleted until the finalizer is ran...
     if(run_finaliser_end > run_finaliser_start)
         for(i = run_finaliser_start; i < run_finaliser_end; i++)
             MARK(run_finaliser_list[i]);
@@ -215,10 +214,10 @@ static void doMark(Thread *self) {
             MARK(run_finaliser_list[i]);
     }
 
-    /* All roots should now be marked.  Scan the heap and recursively
-       mark all marked objects - once the heap has been scanned all
-       reachable objects should be marked */
-
+    // All roots should now be marked.  Scan the heap and recursively
+    // mark all marked objects - once the heap has been scanned all
+    // reachable objects should be marked
+    // from base to limit
     for(ptr = heapbase; ptr < heaplimit;) {
         unsigned int hdr = HEADER(ptr);
         int size = HDR_SIZE(hdr);
@@ -234,18 +233,17 @@ static void doMark(Thread *self) {
                 markChildren(ob);
         }
 
-        /* Skip to next block */
+        // Skip to next block
         ptr += size;
     }
 
-    /* Now all reachable objects are marked.  All other objects are garbage.
-       Any object with a finalizer which is unmarked, however, must have it's
-       finalizer ran before collecting.  Scan the has_finaliser list and move
-       all unmarked objects to the run_finaliser list.  This ensures that
-       finalizers are ran only once, even if finalization resurrects the
-       object, as objects are only added to the has_finaliser list on
-       creation */
-
+    // Now all reachable objects are marked.  All other objects are garbage.
+    // Any object with a finalizer which is unmarked, however, must have it's
+    // finalizer ran before collecting.  Scan the has_finaliser list and move
+    // all unmarked objects to the run_finaliser list.  This ensures that
+    // finalizers are ran only once, even if finalization resurrects the
+    // object, as objects are only added to the has_finaliser list on
+    // creation
     for(i = 0, j = 0; i < has_finaliser_count; i++) {
         Object *ob = has_finaliser_list[i];
   
@@ -258,23 +256,21 @@ static void doMark(Thread *self) {
                 run_finaliser_list = (Object**)realloc(run_finaliser_list,
 				run_finaliser_size*sizeof(Object*));
             }
-	    run_finaliser_end = run_finaliser_end%run_finaliser_size;
+	        run_finaliser_end = run_finaliser_end%run_finaliser_size;
             run_finaliser_list[run_finaliser_end++] = ob;
         } else {
             has_finaliser_list[j++] = ob;
         }        
     }
 
-    /* After scanning, j holds how many finalizers are left */
-
+    // After scanning, j holds how many finalizers are left
     if(j != has_finaliser_count) {
         has_finaliser_count = j;
 
-	/* Extra finalizers to be ran, so signal the finalizer thread
-	   in case it needs waking up.  It won't run until it's
-	   resumed */
-
-	notifyVMWaitLock(run_fnlzr_lock, self);
+        // Extra finalizers to be ran, so signal the finalizer thread
+        // in case it needs waking up.  It won't run until it's
+        // resumed
+        notifyVMWaitLock(run_fnlzr_lock, self);
     }
     unlockVMWaitLock(run_fnlzr_lock, self);
 }
@@ -294,10 +290,9 @@ static int doSweep(Thread *self) {
     /* Amount of free heap is re-calculated during scan */
     heapfree = 0;
 
-    /* Scan the heap and free all unmarked objects by reconstructing
-       the freelist.  Add all free chunks and unmarked objects and
-       merge adjacent free chunks into contiguous areas */
-
+    // Scan the heap and free all unmarked objects by reconstructing
+    // the freelist.  Add all free chunks and unmarked objects and
+    // merge adjacent free chunks into contiguous areas
     for(ptr = heapbase; ptr < heaplimit; ) {
         unsigned int hdr = HEADER(ptr);
         int size = HDR_SIZE(hdr);
@@ -305,12 +300,13 @@ static int doSweep(Thread *self) {
         if(HDR_ALLOCED(hdr)) {
             Object *ob = (Object*)(ptr+HEADER_SIZE);
 
+            // if marked
             if(IS_MARKED(ob))
                 goto marked;
 
-	    if(ob->lock & 1) {
-	        printf("freeing ob with fat lock...\n");
-	        exit(0);
+            if(ob->lock & 1) {
+                printf("freeing ob with fat lock...\n");
+                exit(0);
             }
 
             freed += size;
@@ -322,17 +318,16 @@ static int doSweep(Thread *self) {
         else
             TRACE_GC(("FREE: Unalloced block @ 0x%x size %d - start of block\n", ptr, size));
         
-        /* Add chunk onto the freelist */
+        // Add chunk onto the freelist
         last->next = (Chunk *) ptr;
         last = last->next;
 
-        /* Clear the alloc and flc bits in the header */
+        // Clear the alloc and flc bits in the header
         last->header &= ~(ALLOC_BIT|FLC_BIT);
 
-        /* Scan the next chunks - while they are
-           free, merge them onto the first free
-           chunk */
-
+        // Scan the next chunks - while they are
+        // free, merge them onto the first free
+        // chunk
         for(;;) {
             ptr += size;
 
@@ -347,26 +342,24 @@ static int doSweep(Thread *self) {
                 if(IS_MARKED(ob))
                     break;
 
-	    if(ob->lock & 1) {
-	        printf("freeing ob with fat lock...\n");
-	        exit(0);
-            }
+                if(ob->lock & 1) {
+                    printf("freeing ob with fat lock...\n");
+                    exit(0);
+                }
 
                 freed += size;
                 unmarked++;
 
                 TRACE_GC(("FREE: Freeing object @ 0x%x class %s - merging onto block @ 0x%x\n",
-                                       ob, ob->class ? CLASS_CB(ob->class)->name : "?", last));
-
+                                   ob, ob->class ? CLASS_CB(ob->class)->name : "?", last));
             }
             else 
                 TRACE_GC(("FREE: unalloced block @ 0x%x size %d - merging onto block @ 0x%x\n", ptr, size, last));
             last->header += size;
         }
 
-        /* Scanned to next marked object see if it's
-           the largest so far */
-
+        // Scanned to next marked object see if it's
+        // the largest so far
         if(last->header > largest)
             largest = last->header;
 
@@ -376,7 +369,7 @@ static int doSweep(Thread *self) {
 marked:
         marked++;
 
-        /* Skip to next block */
+        // Skip to next block
         ptr += size;
 
         if(ptr >= heaplimit)
@@ -582,12 +575,10 @@ void expandHeap(int min) {
     allocMarkBits();
 }
 
-static int total = 0;
 void *gcMalloc(int len) {
-    total += len;
-    printf("===============gcMalloc=%d\n", total);
     static int state = 0; /* allocation failure action */
 
+    // align n
     int n = (len+HEADER_SIZE+OBJECT_GRAIN-1)&~(OBJECT_GRAIN-1);
     Chunk *found;
     int largest;
@@ -610,7 +601,6 @@ void *gcMalloc(int len) {
 #endif
         while(*chunkpp) {
             int len = (*chunkpp)->header;
-
             if(len == n) {
                 found = *chunkpp;
                 *chunkpp = found->next;
@@ -881,15 +871,14 @@ int maxHeapMem() {
     return heapmax-heapbase;
 }
 
-/* The async gc loop.  It sleeps for 1 second and
- * calls gc if the system's idle and the heap's
- * changed */
-
+// The async gc loop.  It sleeps for 1 second and
+// calls gc if the system's idle and the heap's
+// changed
 void asyncGCThreadLoop(Thread *self) {
     for(;;) {
         threadSleep(self, 1000, 0);
-	if(systemIdle(self))
-	    gc1();
+        if(systemIdle(self))
+            gc1();
     }
 }
 
@@ -902,7 +891,7 @@ void finalizerThreadLoop(Thread *self) {
 
     for(;;) {
         lockVMWaitLock(run_fnlzr_lock, self);
-	waitVMWaitLock(run_fnlzr_lock, self);
+	    waitVMWaitLock(run_fnlzr_lock, self);
         unlockVMWaitLock(run_fnlzr_lock, self);
         runFinalizers();
     }
@@ -919,6 +908,7 @@ void initialiseGC(int noasyncgc) {
         exit(1);
     }
 
+    // execute oom init method
     init = lookupMethod(oom_clazz, "<init>", "(Ljava/lang/String;)V");
     oom = allocObject(oom_clazz);
     executeMethod(oom, init, NULL);
@@ -975,10 +965,11 @@ Object *allocArray(Class *class, int size, int el_size) {
         return NULL;
     }
 
+    ClassBlock* class_block_tmp = CLASS_CB(class);
     ob = (Object *)gcMalloc(size * el_size + 4 + sizeof(Object));
-
     if(ob != NULL) {
-        *INST_DATA(ob) = size;
+//        *INST_DATA(ob) = size;
+        ARRAY_LEN_WRITE(ob) = size;
         ob->class = class;
         TRACE_ALLOC(("<ALLOC: allocated %s array object @ 0x%x>\n", CLASS_CB(class)->name, ob));
     }

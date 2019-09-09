@@ -256,6 +256,7 @@ retry:
 
 // resolve constant in pool
 u8 resolveSingleConstant(Class *class, int cp_index) {
+    printf("resolve class=%s cp_index=%d\n", CLASS_CB(class)->name, cp_index);
     ConstantPool *cp = &(CLASS_CB(class)->constant_pool);
 
 retry:
